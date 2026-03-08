@@ -1,0 +1,8 @@
+{
+  "name": "DoseDiary - Prescription Tracker",
+  "description": "An intelligent medication management system featuring AI-powered prescription scanning and health assistance.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

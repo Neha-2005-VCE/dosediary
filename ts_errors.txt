@@ -1,0 +1,2 @@
+﻿src/services/gemini.service.ts(2,10): error TS2305: Module '"@google/genai"' has no exported member 'createClient'.
+src/services/prescription.service.ts(27,61): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
