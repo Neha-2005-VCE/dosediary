@@ -201,7 +201,10 @@ export class PatientDashboardComponent implements OnInit {
   }
 
   snooze(med: any) {
-    alert(`Reminder for ${med.medicationName} snoozed for 15 minutes.`);
+    const user = this.store.currentUser();
+    if (!user || !med.id) return;
+    const userId = parseInt(user.id, 10) || 1;
+    this.medicationService.logDose(userId, med.id, 'SNOOZED');
   }
 
   downloadPdf(rx: any) {

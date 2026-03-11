@@ -15,13 +15,20 @@ import { StoreService } from './src/services/store.service';
 import { provideHttpClient, withInterceptors, HttpInterceptorFn, HttpRequest, HttpHandlerFn } from '@angular/common/http';
 
 const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
-  const store = inject(StoreService);
-  const token = store.currentUser()?.token;
-  if (token) {
-    const clonedReq = req.clone({
-      headers: req.headers.set('Authorization', `Bearer ${token}`)
-    });
-    return next(clonedReq);
+  // Read token directly from localStorage to avoid circular dependency with StoreService
+  const userData = localStorage.getItem('dd_current_user');
+  if (userData) {
+    try {
+      const user = JSON.parse(userData);
+      if (user?.token) {
+        const clonedReq = req.clone({
+          headers: req.headers.set('Authorization', `Bearer ${user.token}`)
+        });
+        return next(clonedReq);
+      }
+    } catch (e) {
+      // Invalid JSON, ignore
+    }
   }
   return next(req);
 };

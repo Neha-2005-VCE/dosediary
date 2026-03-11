@@ -35,10 +35,24 @@ interface Message {
         </div>
         <div class="hidden md:block">
            <span class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-xl border border-white/10">
-             V2.4 Gemini Core
+             V2.4 Groq Core
            </span>
         </div>
       </div>
+
+      <!-- API Key Setup Banner -->
+      @if (!hasApiKey()) {
+        <div class="mx-8 mt-6 p-6 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
+          <div class="flex items-center gap-3 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span class="text-orange-500 text-sm font-black uppercase tracking-widest">Groq API Key Required</span>
+          </div>
+          <div class="flex gap-3">
+            <input type="password" [(ngModel)]="apiKeyInput" placeholder="Paste your Groq API key here (starts with gsk_)..." class="flex-1 px-4 py-3 bg-black/60 border border-white/10 rounded-xl text-white placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-orange-500/30 text-sm font-bold">
+            <button (click)="saveApiKey()" class="px-6 py-3 bg-orange-500 text-black rounded-xl font-black text-xs uppercase tracking-widest hover:bg-orange-400 transition-all active:scale-[0.95]">Save</button>
+          </div>
+        </div>
+      }
 
       <!-- Messages Area -->
       <div #scrollContainer class="flex-1 overflow-y-auto p-8 space-y-6 bg-black/10">
@@ -131,7 +145,9 @@ export class ChatComponent implements AfterViewChecked {
 
   messages = signal<Message[]>([]);
   userInput = '';
+  apiKeyInput = '';
   isLoading = signal(false);
+  hasApiKey = signal(!!localStorage.getItem('GROK_API_KEY'));
 
   ngAfterViewChecked() {
     this.scrollToBottom();
@@ -187,5 +203,13 @@ export class ChatComponent implements AfterViewChecked {
   quickAsk(text: string) {
     this.userInput = text;
     this.sendMessage();
+  }
+
+  saveApiKey() {
+    if (this.apiKeyInput.trim()) {
+      localStorage.setItem('GROK_API_KEY', this.apiKeyInput.trim());
+      this.hasApiKey.set(true);
+      this.apiKeyInput = '';
+    }
   }
 }

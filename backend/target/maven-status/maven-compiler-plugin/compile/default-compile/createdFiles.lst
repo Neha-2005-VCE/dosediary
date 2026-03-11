@@ -1,6 +1,7 @@
 com\dosediary\model\MedicationLog$MedicationLogBuilder.class
 com\dosediary\service\AnalyticsService$NotificationStatus.class
 com\dosediary\config\ApplicationConfig.class
+com\dosediary\controller\UserController.class
 com\dosediary\service\AnalyticsService.class
 com\dosediary\DoseDiaryApplication.class
 com\dosediary\auth\AuthenticationController.class
@@ -12,6 +13,7 @@ com\dosediary\security\SecurityConfiguration.class
 com\dosediary\auth\AuthenticationRequest$AuthenticationRequestBuilder.class
 com\dosediary\model\MedicationSchedule.class
 com\dosediary\repository\MedicationScheduleRepository.class
+com\dosediary\service\NotificationService.class
 com\dosediary\auth\AuthenticationService.class
 com\dosediary\model\MedicationLog.class
 com\dosediary\security\JwtAuthenticationFilter.class

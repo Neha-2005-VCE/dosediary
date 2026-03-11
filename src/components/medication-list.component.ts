@@ -1,5 +1,6 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, OnInit } from '@angular/core';
 import { MedicationService, Medication } from '../services/medication.service';
+import { StoreService } from '../services/store.service';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -78,33 +79,33 @@ import { RouterLink } from '@angular/router';
            Deactivated Protocols
         </h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-40 grayscale pointer-events-none pb-20">
-          <div class="bg-[#111] rounded-[2.5rem] border border-white/5 p-8 flex flex-col gap-6 relative overflow-hidden">
-            <div class="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
-            </div>
-            <div class="space-y-2">
-              <h3 class="font-black text-slate-400 text-2xl tracking-tight">Diabetes Support</h3>
-              <p class="text-xs font-black text-slate-600 uppercase tracking-widest">Metformin 500mg • Once Daily</p>
-            </div>
+        @if (medEntries().past.length === 0) {
+          <div class="bg-[#111] rounded-[2.5rem] border border-white/5 p-12 text-center opacity-40">
+            <p class="text-slate-500 font-bold">No past medications recorded.</p>
           </div>
-          <div class="bg-[#111] rounded-[2.5rem] border border-white/5 p-8 flex flex-col gap-6 relative overflow-hidden">
-            <div class="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
-            </div>
-            <div class="space-y-2">
-              <h3 class="font-black text-slate-400 text-2xl tracking-tight">Cholesterol Control</h3>
-              <p class="text-xs font-black text-slate-600 uppercase tracking-widest">Atorvastatin 20mg • At Night</p>
-            </div>
+        } @else {
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-40 grayscale pb-20">
+            @for (med of medEntries().past; track med.id) {
+              <div class="bg-[#111] rounded-[2.5rem] border border-white/5 p-8 flex flex-col gap-6 relative overflow-hidden">
+                <div class="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+                </div>
+                <div class="space-y-2">
+                  <h3 class="font-black text-slate-400 text-2xl tracking-tight">{{ med.medicationName }}</h3>
+                  <p class="text-xs font-black text-slate-600 uppercase tracking-widest">{{ med.dosage }} • {{ med.frequency }}</p>
+                </div>
+              </div>
+            }
           </div>
-        </div>
+        }
       </div>
     </div>
 
   `
 })
-export class MedicationListComponent {
+export class MedicationListComponent implements OnInit {
   medicationService = inject(MedicationService);
+  private store = inject(StoreService);
 
   medEntries = computed(() => {
     const all = this.medicationService.medications();
@@ -113,6 +114,13 @@ export class MedicationListComponent {
       past: all.filter(m => !m.active)
     };
   });
+
+  ngOnInit() {
+    const user = this.store.currentUser();
+    if (user) {
+      this.medicationService.loadMedications(parseInt(user.id, 10));
+    }
+  }
 
   deleteMed(id: string | number | undefined) {
     if (id && confirm('Are you sure you want to remove this medication?')) {

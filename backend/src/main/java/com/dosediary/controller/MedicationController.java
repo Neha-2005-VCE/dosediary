@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/medications")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class MedicationController {
     private final MedicationScheduleRepository scheduleRepository;

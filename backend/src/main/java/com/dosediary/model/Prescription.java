@@ -20,6 +20,8 @@ public class Prescription {
     private Long id;
 
     private Long userId; // Patient ID
+    private Long doctorId; // Doctor ID
+    private String patientName;
     private String doctorName;
     private String medicationName;
     private String dosage;

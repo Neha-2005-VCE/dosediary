@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { StoreService } from '../../services/store.service';
 import { DatePipe } from '@angular/common';
 
@@ -62,6 +62,11 @@ import { DatePipe } from '@angular/common';
     </div>
   `
 })
-export class AdminDashboardComponent {
+export class AdminDashboardComponent implements OnInit {
   store = inject(StoreService);
+
+  ngOnInit() {
+    // Fetch all users from backend
+    this.store.loadUsers();
+  }
 }

@@ -1,8 +1,10 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { StoreService } from '../../services/store.service';
+import { PrescriptionService } from '../../services/prescription.service';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { Prescription } from '../../models/types';
+import { GeminiService } from '../../services/gemini.service';
 
 @Component({
   selector: 'app-doctor-dashboard',
@@ -24,8 +26,8 @@ import { Prescription } from '../../models/types';
         <div class="flex items-center gap-4">
           <label class="cursor-pointer bg-[#111] text-white px-6 py-4 rounded-2xl font-black border border-white/10 shadow-xl hover:bg-white/5 transition-all active:scale-[0.98] flex items-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-            Upload PDF
-            <input type="file" accept=".pdf" class="hidden" (change)="onPdfSelected($event)">
+            Scan Prescription
+            <input type="file" accept="image/*" class="hidden" (change)="onScanSelected($event)">
           </label>
           <button (click)="openIssueMode()" class="bg-brand-500 text-black px-8 py-4 rounded-2xl font-black shadow-xl shadow-brand-500/20 hover:bg-brand-400 transition-all active:scale-[0.98] flex items-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -48,7 +50,7 @@ import { Prescription } from '../../models/types';
         <div class="bg-[#111] p-8 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden group">
            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
            <span class="text-slate-500 text-xs font-bold uppercase tracking-widest">Prescriptions Issued</span>
-           <p class="text-5xl font-black text-white mt-4">{{ myPrescriptions().length }}</p>
+           <p class="text-5xl font-black text-white mt-4">{{ rxService.prescriptions().length }}</p>
            <div class="mt-4 text-slate-400 text-xs font-bold uppercase tracking-widest">Total Lifecycle</div>
         </div>
         <div class="bg-brand-500 p-8 rounded-3xl shadow-xl shadow-brand-500/10 flex flex-col justify-between overflow-hidden relative group">
@@ -59,25 +61,6 @@ import { Prescription } from '../../models/types';
              <p class="text-black/80 font-bold mt-1 text-sm tracking-tight">Active for Prescribing</p>
            </div>
         </div>
-      </div>
-
-      <!-- Alerts Section -->
-      <div class="bg-red-500/10 border border-red-500/20 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
-         <div class="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-         <div class="flex items-center gap-3 mb-4">
-           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-           <h2 class="text-2xl font-black text-red-500 tracking-tight">System Alerts</h2>
-         </div>
-         <div class="space-y-3 relative z-10">
-            <!-- Simulated Alerts -->
-            <div class="flex items-center justify-between bg-black/40 p-4 rounded-2xl border border-red-500/10">
-               <div>
-                  <h4 class="text-white font-bold leading-none">Patient: John Doe</h4>
-                  <p class="text-slate-400 text-sm font-bold mt-1">Adherence fell below <span class="text-red-500">80%</span> threshold</p>
-               </div>
-               <button class="bg-red-500 text-black px-4 py-2 font-black text-xs rounded-xl uppercase tracking-widest hover:bg-red-400">Review</button>
-            </div>
-         </div>
       </div>
 
       <!-- Main Activity Area -->
@@ -105,14 +88,14 @@ import { Prescription } from '../../models/types';
                    </tr>
                  </thead>
                  <tbody>
-                   @for (rx of myPrescriptions(); track rx.id) {
+                   @for (rx of rxService.prescriptions(); track rx.id) {
                      <tr class="bg-black/40 hover:bg-white/5 transition-all group rounded-2xl">
                        <td class="py-6 pl-6 rounded-l-2xl">
                          <div class="flex items-center gap-3">
                            <div class="w-10 h-10 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-slate-400 font-bold text-sm">
-                             {{ rx.patientName.substring(0,1) }}
+                             {{ (rx.patientName || 'P').substring(0,1) }}
                            </div>
-                           <span class="text-white font-bold">{{ rx.patientName }}</span>
+                           <span class="text-white font-bold">{{ rx.patientName || 'Patient #' + rx.userId }}</span>
                          </div>
                        </td>
                        <td class="py-6 text-slate-300 font-medium">{{ rx.medicationName }}</td>
@@ -120,43 +103,19 @@ import { Prescription } from '../../models/types';
                          <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-slate-400 text-sm font-bold">{{ rx.dosage }}</span>
                        </td>
                        <td class="py-6 text-center">
-                         <span [class]="'px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ' + (rx.status === 'active' ? 'bg-brand-500/10 text-brand-500 border border-brand-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20')">
+                         <span [class]="'px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ' + (rx.status === 'ACTIVE' ? 'bg-brand-500/10 text-brand-500 border border-brand-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20')">
                            {{ rx.status }}
                          </span>
                        </td>
-                       <td class="py-6 text-slate-500 font-bold text-sm italic">{{ rx.expiryDate | date:'MMM d, yyyy' }}</td>
+                       <td class="py-6 text-slate-500 font-bold text-sm italic">{{ rx.expiryDate }}</td>
                        <td class="py-6 text-right pr-6 rounded-r-2xl">
                          <button (click)="editPrescription(rx)" class="bg-white/5 hover:bg-brand-500 hover:text-black border border-white/10 text-white px-5 py-2 rounded-xl text-xs font-heavy transition-all active:scale-[0.95]">
                            Review & Renew
                          </button>
                        </td>
                      </tr>
-                     <!-- Audit Trail Enhancement -->
-                     @if (rx.history.length > 0) {
-                        <tr>
-                           <td colspan="6" class="px-6 py-0">
-                             <div class="bg-black/20 rounded-2xl p-4 mb-4 border border-white/5">
-                                <div class="flex items-center gap-2 text-xs font-bold text-slate-600 mb-3 uppercase tracking-tighter">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                  Audit History ({{rx.history.length}} Version Records)
-                                </div>
-                                <div class="space-y-3">
-                                  @for (h of rx.history; track h.updatedAt) {
-                                    <div class="flex items-start gap-3 bg-[#161616] p-3 rounded-xl border border-white/5">
-                                      <div class="text-[10px] text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded-md font-black uppercase">{{ h.updatedAt | date:'shortTime' }}</div>
-                                      <div class="text-xs text-slate-400 leading-relaxed">
-                                        <span class="text-white font-bold">{{ h.updatedBy }}</span> modified: 
-                                        <span class="italic opacity-80">"{{ h.reason }}"</span>
-                                      </div>
-                                    </div>
-                                  }
-                                </div>
-                             </div>
-                           </td>
-                        </tr>
-                     }
                    }
-                   @if (myPrescriptions().length === 0) {
+                   @if (rxService.prescriptions().length === 0) {
                      <tr><td colspan="6" class="text-center py-24 text-slate-600 font-bold italic tracking-wide">No secure prescription records found in the vault.</td></tr>
                    }
                  </tbody>
@@ -174,7 +133,7 @@ import { Prescription } from '../../models/types';
                   </div>
                   <div>
                     <h3 class="text-white font-black text-xl tracking-tight">Updating Active Protocol</h3>
-                    <p class="text-slate-400 mt-1">Every modification is legally logged for pharmaceutical verification.</p>
+                    <p class="text-slate-400 mt-1">Every modification is logged for pharmaceutical verification.</p>
                   </div>
                 </div>
               }
@@ -199,9 +158,9 @@ import { Prescription } from '../../models/types';
                   <label class="text-xs font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Current Status</label>
                   <div class="relative">
                     <select formControlName="status" class="w-full px-6 py-4 bg-black border border-white/10 rounded-2xl text-white outline-none focus:ring-2 focus:ring-brand-500/50 appearance-none cursor-pointer">
-                      <option value="active">Operational: Active</option>
-                      <option value="completed">Operational: Completed</option>
-                      <option value="cancelled">Operational: Revoked</option>
+                      <option value="ACTIVE">Operational: Active</option>
+                      <option value="COMPLETED">Operational: Completed</option>
+                      <option value="CANCELLED">Operational: Revoked</option>
                     </select>
                     <div class="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -257,14 +216,14 @@ import { Prescription } from '../../models/types';
     </div>
   `
 })
-export class DoctorDashboardComponent {
+export class DoctorDashboardComponent implements OnInit {
   store = inject(StoreService);
+  rxService = inject(PrescriptionService);
   fb: FormBuilder = inject(FormBuilder);
+  geminiService = inject(GeminiService);
 
   view = signal<'list' | 'form'>('list');
   editModeId = signal<string | null>(null);
-
-  myPrescriptions = computed(() => this.store.getMyPrescriptions());
 
   rxForm = this.fb.group({
     patientId: ['', Validators.required],
@@ -273,92 +232,120 @@ export class DoctorDashboardComponent {
     frequency: ['', Validators.required],
     duration: ['', Validators.required],
     instructions: ['', Validators.required],
-    status: ['active'],
+    status: ['ACTIVE'],
     expiryDate: [new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]]
   });
+
+  ngOnInit() {
+    const user = this.store.currentUser();
+    if (user) {
+      const doctorId = parseInt(user.id, 10);
+      if (!isNaN(doctorId)) {
+        this.rxService.loadDoctorPrescriptions(doctorId);
+      }
+      // Load patients for the dropdown
+      this.store.loadPatients();
+    }
+  }
 
   openIssueMode() {
     this.editModeId.set(null);
     this.rxForm.reset({
-      status: 'active',
+      status: 'ACTIVE',
       expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     });
     this.view.set('form');
   }
 
-  onPdfSelected(event: Event) {
+  async onScanSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
 
     const file = input.files[0];
-    alert(`Extracting data from ${file.name}...`);
+    alert(`Extracting data from ${file.name} using AI...`);
 
-    // Simulate parsing the PDF and pre-filling the form
-    setTimeout(() => {
-      this.editModeId.set(null);
-      this.rxForm.patchValue({
-        medicationName: 'Extracted Medication (From PDF)',
-        dosage: '10mg',
-        frequency: 'Daily',
-        duration: '30 Days',
-        instructions: 'Take one pill every morning as extracted from PDF.',
-        status: 'active',
-        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      });
-      this.view.set('form');
-      alert('PDF data successfully parsed and populated into the form.');
-    }, 1000);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64String = (reader.result as string).split(',')[1];
+        try {
+          const extracted = await this.geminiService.extractMedicationDetails(base64String);
+          this.editModeId.set(null);
+          if (extracted) {
+            this.rxForm.patchValue({
+              medicationName: extracted.name || 'Extracted Medication',
+              dosage: extracted.dosage || '',
+              frequency: extracted.frequency || '',
+              duration: '30 Days',
+              instructions: extracted.instructions || '',
+              status: 'ACTIVE',
+              expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            });
+            alert('AI Extraction successful!');
+          } else {
+            alert('AI could not extract details properly.');
+          }
+          this.view.set('form');
+        } catch (e) {
+          console.error('Extraction failed', e);
+          alert('AI Extraction failed. Check API key or console.');
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (e) {
+      console.error('File read error', e);
+    }
   }
 
-  editPrescription(rx: Prescription) {
-    this.editModeId.set(rx.id);
+  editPrescription(rx: any) {
+    this.editModeId.set(String(rx.id));
     this.rxForm.patchValue({
-      patientId: rx.patientId,
+      patientId: String(rx.userId || rx.patientId),
       medicationName: rx.medicationName,
       dosage: rx.dosage,
       frequency: rx.frequency,
       duration: rx.duration,
       instructions: rx.instructions,
       status: rx.status,
-      expiryDate: rx.expiryDate ? rx.expiryDate.split('T')[0] : ''
+      expiryDate: rx.expiryDate ? String(rx.expiryDate).split('T')[0] : ''
     });
     this.view.set('form');
   }
 
-  onSubmit() {
+  async onSubmit() {
     if (this.rxForm.valid) {
       const formVal = this.rxForm.value;
+      const doctor = this.store.currentUser();
       const patient = this.store.allPatients().find(p => p.id === formVal.patientId);
 
       if (this.editModeId()) {
-        // Update existing
-        this.store.updatePrescription(
-          this.editModeId()!,
-          {
-            medicationName: formVal.medicationName!,
-            dosage: formVal.dosage!,
-            frequency: formVal.frequency!,
-            duration: formVal.duration!,
-            instructions: formVal.instructions!,
-            expiryDate: formVal.expiryDate!,
-            status: formVal.status as any
-          },
-          "Updated by doctor via dashboard"
-        );
-        alert('Prescription updated.');
-      } else {
-        // Create new
-        this.store.issuePrescription({
-          patientId: formVal.patientId!,
-          patientName: patient?.fullName || 'Unknown',
+        // Update existing via backend
+        await this.rxService.updatePrescription(this.editModeId()!, {
           medicationName: formVal.medicationName!,
           dosage: formVal.dosage!,
           frequency: formVal.frequency!,
           duration: formVal.duration!,
           instructions: formVal.instructions!,
-          expiryDate: formVal.expiryDate!
+          expiryDate: formVal.expiryDate!,
+          status: formVal.status as any
         });
-        alert('Prescription issued.');
+        alert('Prescription updated successfully.');
+      } else {
+        // Create new via backend
+        await this.rxService.issuePrescription({
+          userId: Number(formVal.patientId),
+          doctorId: Number(doctor?.id),
+          patientName: patient?.fullName || 'Unknown',
+          doctorName: doctor?.fullName || 'Unknown',
+          medicationName: formVal.medicationName!,
+          dosage: formVal.dosage!,
+          frequency: formVal.frequency!,
+          duration: formVal.duration!,
+          instructions: formVal.instructions!,
+          expiryDate: formVal.expiryDate!,
+          status: 'ACTIVE'
+        } as any);
+        alert('Prescription issued successfully.');
       }
 
       this.view.set('list');
